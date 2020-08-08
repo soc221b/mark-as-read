@@ -1,0 +1,23 @@
+{
+  "manifest_version": 2,
+  "version": "0.1",
+  "name": "Mark As Read",
+
+  "description": "Mark code which has been read.",
+  "icons": {
+    "16": "images/icon16.png",
+    "32": "images/icon32.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+
+  "permissions": ["storage"],
+
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["contentScript.js"],
+      "css": ["contentScript.css"]
+    }
+  ]
+}
