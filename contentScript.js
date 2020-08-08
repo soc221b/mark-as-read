@@ -7,7 +7,7 @@ const debounce = (fn, ms = 0) => {
   };
 };
 
-const observeUrlUpdate = (callback) => {
+const observe = (callback) => {
   const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
       callback();
@@ -120,7 +120,7 @@ const main = () => {
 const debouncedMain = debounce(main);
 
 window.addEventListener("load", debouncedMain);
-observeUrlUpdate(debouncedMain);
+observe(debouncedMain);
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log(
