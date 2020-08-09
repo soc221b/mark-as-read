@@ -1,3 +1,7 @@
 # mark-as-read
 
-![Demo](./images/demo.gif)
+# Demo
+
+![Basic Usage](./images/demo.gif)
+
+![Identify with sha](./images/sha.gif)
