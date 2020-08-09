@@ -159,11 +159,6 @@ const getShaMappingForBranchesOrTags = async (isBranch = true) => {
   });
 };
 
-const isSpecificCommit = async () => {
-  const shaMapping = await fetchShaMapping();
-  return !(getRepoHead() in shaMapping.branches);
-};
-
 const blobRe = /\/.*?\/.*?\/blob\/.*/;
 let oldPathname = null;
 let oldRepo = null;
@@ -181,6 +176,7 @@ const main = () => {
     oldRepo = getRepoName();
     shaMapping = null;
     shaMappingPromise = null;
+    fetchShaMapping();
   }
 
   markRead();
