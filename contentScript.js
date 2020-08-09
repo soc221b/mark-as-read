@@ -23,7 +23,20 @@ const observe = (callback) => {
 };
 
 const getRepoId = () => {
-  return window.location.pathname;
+  const pathNameParts = window.location.pathname.split("/");
+  pathNameParts[4] =
+    shaMapping.branches[getRepoHead()] ||
+    shaMapping.tags[getRepoHead()] ||
+    getRepoHead();
+  return pathNameParts.join("/");
+};
+
+const getRepoName = () => {
+  return window.location.pathname.split("/").slice(1, 3).join("/");
+};
+
+const getRepoHead = () => {
+  return window.location.pathname.split("/")[4];
 };
 
 const getTrs = (lineNumbers) => {
@@ -35,7 +48,7 @@ const getTrs = (lineNumbers) => {
 };
 
 let oldLineNumbers = [];
-const markReadByLineNumbers = () => {
+const markRead = () => {
   const key = getRepoId();
   chrome.storage.sync.get([key], (result) => {
     const lineNumbers = JSON.parse(result[key] || null) || [];
@@ -95,24 +108,82 @@ const addTdListeners = () => {
   });
 };
 
-let warned = false;
+let shaMapping = null;
+let shaMappingPromise = null;
+const fetchShaMapping = async () => {
+  if (shaMapping === null) {
+    shaMapping = {
+      branches: {},
+      tags: {},
+      shas: {},
+    };
+    shaMappingPromise = await Promise.all([
+      getShaMappingForBranchesOrTags(),
+      getShaMappingForBranchesOrTags(false),
+    ]);
+  }
+  await shaMappingPromise;
+  markRead();
+  return shaMapping;
+};
+
+const getShaMappingForBranchesOrTags = async (isBranch = true) => {
+  return new Promise((resolve) => {
+    var xhr = new XMLHttpRequest();
+    const branchesOrTags = isBranch ? "branches" : "tags";
+    xhr.open(
+      "GET",
+      `https://api.github.com/repos/${getRepoName()}/${branchesOrTags}`,
+      true
+    );
+
+    xhr.onload = () => {
+      try {
+        const response = JSON.parse(xhr.response);
+        tags = response.map((item) => item.name);
+        sha = response.map((item) => item.commit.sha);
+        response.forEach((item) => {
+          shaMapping[branchesOrTags][item.name] = item.commit.sha;
+          shaMapping.shas[item.commit.sha] =
+            shaMapping.shas[item.commit.sha] || [];
+          shaMapping.shas[item.commit.sha].push(item.name);
+        });
+      } catch (error) {
+        // do nothing
+      } finally {
+        resolve();
+      }
+    };
+
+    xhr.send(null);
+  });
+};
+
+const isSpecificCommit = async () => {
+  const shaMapping = await fetchShaMapping();
+  return !(getRepoHead() in shaMapping.branches);
+};
+
+const blobRe = /\/.*?\/.*?\/blob\/.*/;
+let oldPathname = null;
+let oldRepo = null;
 const main = () => {
   if (!chrome.storage) return;
+  if (blobRe.test(window.location.pathname) === false) return;
 
-  if (
-    /^\/.*?\/.*?\/blob\/[0-9a-f]{40}\/.*$/.test(window.location.pathname) ===
-      false &&
-    warned === false
-  ) {
-    warned = true;
-    console.log(
-      "[chrome extensions: mark-as-read] It is recommended to navigate to a specific commit instead of this branch since content will probably be changed in future."
-    );
+  // reset
+  if (oldPathname !== window.location.pathname) {
+    oldPathname = window.location.pathname;
+    chrome.storage.onChanged.removeListener(markRead);
+    chrome.storage.onChanged.addListener(markRead);
+  }
+  if (oldRepo !== getRepoName()) {
+    oldRepo = getRepoName();
+    shaMapping = null;
+    shaMappingPromise = null;
   }
 
-  chrome.storage.onChanged.removeListener(markReadByLineNumbers);
-  chrome.storage.onChanged.addListener(markReadByLineNumbers);
-  markReadByLineNumbers();
+  markRead();
   addTdListeners();
 };
 const debouncedMain = debounce(main);
