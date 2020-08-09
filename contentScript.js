@@ -6,6 +6,11 @@ const debounce = (fn, ms = 0) => {
     timeout = setTimeout(fn, ms);
   };
 };
+const createRange = (start, end) => {
+  return Array(end - start + 1)
+    .fill(null)
+    .map((_, index) => index + start);
+};
 
 const observe = (callback) => {
   const observer = new MutationObserver(function (mutations) {
@@ -64,20 +69,8 @@ const markRead = () => {
   });
 };
 
-const getCurrentSelectedLineNumbers = () => {
-  const range = window.location.hash.slice(1).split("-");
-  const startLineNumber = parseInt(range[0].slice(1), 10);
-  const endLineNumber = parseInt((range[1] || range[0]).slice(1), 10);
-
-  return Array(endLineNumber - startLineNumber + 1)
-    .fill(null)
-    .map((_, index) => index + startLineNumber);
-};
-
-const updateLineNumbers = () => {
-  const selectedLineNumbers = getCurrentSelectedLineNumbers();
+const updateLineNumbers = (selectedLineNumbers) => {
   const key = getRepoId();
-
   chrome.storage.sync.get([key], (result) => {
     const oldLineNumbers = JSON.parse(result[key] || null) || [];
     const oldLineNumberSet = new Set(oldLineNumbers);
@@ -95,15 +88,70 @@ const updateLineNumbers = () => {
   });
 };
 
-const debouncedUpdateLineNumbers = debounce(updateLineNumbers);
+const updateLineNumbersForHash = () => {
+  const range = window.location.hash.slice(1).split("-");
+  const startLineNumber = parseInt(range[0].slice(1), 10);
+  const endLineNumber = parseInt((range[1] || range[0]).slice(1), 10);
+
+  const selectedLineNumbers = createRange(startLineNumber, endLineNumber);
+
+  updateLineNumbers(selectedLineNumbers);
+};
+const debouncedUpdateLineNumbersForHash = debounce(updateLineNumbersForHash);
+
+let lastMousedownEvent = null;
+let lastMouseupEvent = null;
+const updateLineNumbersForDrag = () => {
+  if (lastMousedownEvent === null || lastMouseupEvent === null) return;
+  if (
+    lastMousedownEvent.clientX === lastMouseupEvent.clientX &&
+    lastMousedownEvent.clientY === lastMouseupEvent.clientY
+  )
+    return;
+
+  const findTd = (el) => {
+    while (el) {
+      if (el.nodeName === "TR") break;
+      el = el.parentElement;
+    }
+    if (el) el = el.children[0];
+    return el;
+  };
+  const startTd = findTd(lastMousedownEvent.srcElement);
+  const endTd = findTd(lastMouseupEvent.srcElement);
+
+  if (startTd && endTd) {
+    let startLineNumber = parseInt(startTd.id.slice(1), 10);
+    let endLineNumber = parseInt(endTd.id.slice(1), 10);
+    if (startLineNumber > endLineNumber) {
+      const temp = startLineNumber;
+      startLineNumber = endLineNumber;
+      endLineNumber = temp;
+    }
+    const selectedLineNumbers = createRange(startLineNumber, endLineNumber);
+    updateLineNumbers(selectedLineNumbers);
+  }
+};
+const debouncedUpdateLineNumbersForDrag = debounce(updateLineNumbersForDrag);
 
 const tdIeRe = /^L\d+$/;
 const listenClickTd = () => {
-  document.querySelector('table').addEventListener('click', (event) => {
+  document.querySelector("table").addEventListener("click", (event) => {
     if (tdIeRe.test(event.srcElement.id)) {
-      debouncedUpdateLineNumbers()
+      debouncedUpdateLineNumbersForHash();
     }
-  })
+  });
+  document.querySelector("table").addEventListener("mousedown", (event) => {
+    if (tdIeRe.test(event.srcElement.id) === false) {
+      lastMousedownEvent = event;
+    }
+  });
+  document.querySelector("table").addEventListener("mouseup", (event) => {
+    if (tdIeRe.test(event.srcElement.id) === false) {
+      lastMouseupEvent = event;
+      debouncedUpdateLineNumbersForDrag();
+    }
+  });
 };
 
 let shaMapping = null;
