@@ -98,14 +98,12 @@ const updateLineNumbers = () => {
 const debouncedUpdateLineNumbers = debounce(updateLineNumbers);
 
 const tdIeRe = /^L\d+$/;
-const addTdListeners = () => {
-  document.querySelectorAll("td").forEach((td) => {
-    td.addEventListener("click", (event) => {
-      if (tdIeRe.test(event.srcElement.id)) {
-        debouncedUpdateLineNumbers();
-      }
-    });
-  });
+const listenClickTd = () => {
+  document.querySelector('table').addEventListener('click', (event) => {
+    if (tdIeRe.test(event.srcElement.id)) {
+      debouncedUpdateLineNumbers()
+    }
+  })
 };
 
 let shaMapping = null;
@@ -180,7 +178,7 @@ const main = () => {
   }
 
   markRead();
-  addTdListeners();
+  listenClickTd();
 };
 const debouncedMain = debounce(main);
 
