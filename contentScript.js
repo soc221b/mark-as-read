@@ -9,9 +9,7 @@ const debounce = (fn, ms = 0) => {
 
 const observe = (callback) => {
   const observer = new MutationObserver(function (mutations) {
-    mutations.forEach(function (mutation) {
-      callback();
-    });
+    callback();
   });
 
   const config = {
