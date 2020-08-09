@@ -64,22 +64,22 @@ const getCurrentSelectedLineNumbers = () => {
 };
 
 const updateLineNumbers = () => {
-  const newLineNumbers = getCurrentSelectedLineNumbers();
+  const selectedLineNumbers = getCurrentSelectedLineNumbers();
   const key = getRepoId();
 
   chrome.storage.sync.get([key], (result) => {
     const oldLineNumbers = JSON.parse(result[key] || null) || [];
     const oldLineNumberSet = new Set(oldLineNumbers);
-    const newLineNumberSet = new Set(newLineNumbers);
-    const finalLineNumbers = newLineNumbers.every((lineNumber) =>
+    const selectedLineNumberSet = new Set(selectedLineNumbers);
+    const newLineNumbers = selectedLineNumbers.every((lineNumber) =>
       oldLineNumberSet.has(lineNumber)
     )
       ? oldLineNumbers.filter(
-          (lineNumber) => newLineNumberSet.has(lineNumber) === false
+          (lineNumber) => selectedLineNumberSet.has(lineNumber) === false
         )
-      : [...new Set(oldLineNumbers.concat(newLineNumbers))];
+      : [...new Set(oldLineNumbers.concat(selectedLineNumbers))];
 
-    const value = JSON.stringify(finalLineNumbers);
+    const value = JSON.stringify(newLineNumbers);
     chrome.storage.sync.set({ [key]: value });
   });
 };
