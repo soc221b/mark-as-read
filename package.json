@@ -6,10 +6,16 @@
   "author": "Ernest Chang <iattempt.net@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "lint": "prettier ."
+    "build": "rollup -c",
+    "lint": "prettier . --check"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.122",
-    "prettier": "^2.0.5"
+    "axios": "^0.19.2",
+    "csso": "^4.0.3",
+    "prettier": "^2.0.5",
+    "rollup": "^2.26.2",
+    "rollup-plugin-copy": "^3.3.0",
+    "rollup-plugin-delete": "^2.0.0"
   }
 }
