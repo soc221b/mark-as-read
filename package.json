@@ -1,6 +1,9 @@
 {
   "name": "mark-as-read",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=8"
+  },
   "main": "index.js",
   "repository": "git@github.com:iendeavor/mark-as-read.git",
   "author": "Ernest Chang <iattempt.net@gmail.com>",
